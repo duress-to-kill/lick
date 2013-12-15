@@ -7,56 +7,56 @@
 #####
 
 #####
-#Handler functions	
+#Handler functions  
 #####
 
 initiate_test()
 {
     echo test 1
     # Determine if printer is up or down and initialize a variable accordingly
-    lpoptions -p "$LICK_PRINTER" | grep -q "printer-state=5" && LICK_PRINTER_STATE=1 || LICK_PRINTER_STATE=0
+    lpoptions -p "$1" | grep -q "printer-state=5" && LICK_PRINTER_STATE=1 || LICK_PRINTER_STATE=0
 
     # Detemine if printer is accepting jobs
-    lpoptions -p "$LICK_PRINTER" | grep -q "printer-is-accepting-jobs=true" && LICK_PRINT_QUEUE=0 || LICK_PRINTER_STATE=1
+    lpoptions -p "$1" | grep -q "printer-is-accepting-jobs=true" && LICK_PRINT_QUEUE=0 || LICK_PRINT_QUEUE=1
 
     # Determine if printer supports duplex printing. Will not match on duplex tumble-only printers (if such exist)
-    lpoptions -p "$LICK_PRINTER" -l | grep -q "DuplexNoTumble" && LICK_DUPLEX_SUPPORT=0 || LICK_DUPLEX_SUPPORT=1
+    lpoptions -p "$1" -l | grep -q "DuplexNoTumble" && LICK_DUPLEX_SUPPORT=0 || LICK_DUPLEX_SUPPORT=1
 
     # Report printer status
     if [ "$LICK_SILENTLY" != "true" ]; then
     {
-    	echo -n "$LICK_PRINTER is "
-	    [ "$LICK_PRINTER_STATE" == 0 ] && echo "up." || echo "down!"
-	
-    	echo -n "$LICK_PRINTER is "
-    	[ "$LICK_PRINT_QUEUE" == 1 ] && echo -n "NOT "
-    	echo "accepting jobs."
-	
-    	[ "$LICK_DUPLEX_SUPPORT" == 0 ] && echo "$LICK_PRINTER supports duplex printing."
-    	
-    	[ "$LICK_PRINTER_STATE" == 0 ] && [ "$LICK_WITHOUT_TESTPAGE" != "true" ] && echo -e "\nPrinting test page."
+        echo -n "$1 is "
+        [ "$LICK_PRINTER_STATE" == 0 ] && echo "up." || echo "down!"
+    
+        echo -n "$1 is "
+        [ "$LICK_PRINT_QUEUE" == 1 ] && echo -n "NOT "
+        echo "accepting jobs."
+    
+        [ "$LICK_DUPLEX_SUPPORT" == 0 ] && echo "$1 supports duplex printing."
+        
+        [ "$LICK_PRINTER_STATE" == 0 ] && [ "$LICK_WITHOUT_TESTPAGE" != "true" ] && echo -e "\nPrinting test page."
     }
     fi
 
-    if [ "$LICK_PRINTER_STATE" == 0 && "$LICK_WITHOUT_TESTPAGE" != "true" ]; then
+    if [ "$LICK_PRINTER_STATE" == 0 ] && [ "$LICK_WITHOUT_TESTPAGE" != "true" ]; then
     # Next line for script testing purposes. Comment it to enable test page printing.
-	    cat <<Endoftestpage 
-	    lpr -P "$LICK_PRINTER" -p -J "Printer Test Page" <<-Endoftestpage
-    	$0 (1M) - line printer input check
-    	test page printed from `hostname` by $USER
-    	
-    	printer status:
-    	`lpoptions -p "$LICK_PRINTER" | fold -w95`
-    
-    	`[ "$LICK_NO_GARBAGE" != "true" ] && /usr/xpg6/bin/tr -cd 'a-Z0-9' < /dev/urandom | fold -w95 | head -60`
+		cat <<-Endoftestpage 
+		lpr -P "$1" -p -J "Printer Test Page" <<-Endoftestpage
+		$0 (1M) - line printer input check
+		test page printed from `hostname` by $USER
+
+		printer status:
+		`lpoptions -p $1 | fold -w95`
+
+		`[ "$LICK_NO_GARBAGE" != "true" ] && tr -cd 'A-z0-9' < /dev/urandom | fold -w95 | head -60`
 Endoftestpage
     fi
 }
 
 show_help()
 {
-	echo $0 "--help"
-	echo $0 "[--nogarbage] [--nopage] [--silent] printer [...]"
+    echo $0 "--help"
+    echo $0 "[--nogarbage] [--nopage] [--silent] printer [...]"
 }
 
 #####
@@ -78,24 +78,22 @@ if [ $PARAMS_GOOD == false ] ; then
     exit 1
 fi
 
-echo "foo"
 #while [ -n "$1" ] ; do
 for i; do
-    echo 'bar'
     case "$i" in
-        "--nogarbage" ) export LICK_NO_GARBAGE="true" ; shift ;;
-        "--nopage"    ) export LICK_WITHOUT_TESTPAGE="true" ; shift ;;
-	    "--silent"    ) export LICK_SILENTLY="true" ; shift ;;
-        "--help"      ) show_help ; exit 0 ;;
-        "-*"          ) echo "Invalid option: $i" ; show_help ; exit 1 ;;
-        "!"           ) 
-                        select PRINTER in `cat ~/bin/.lick_lists/$2`; do
-                            initiate_test $PRINTER
-                        done
-                        shift
-                        shift
-                        ;;
-        "*"           ) initiate_test "$i" ; shift ;;
+        --nogarbage ) export LICK_NO_GARBAGE="true" ;;
+        --nopage    ) export LICK_WITHOUT_TESTPAGE="true" ;;
+        --silent    ) export LICK_SILENTLY="true" ;;
+        --help      ) show_help ; exit 0 ;;
+        -*          ) echo "Invalid option: $i" ; show_help ; exit 1 ;;
+        #"!"           ) 
+        #                select PRINTER in `cat ~/bin/.lick_lists/$2`; do
+        #                    initiate_test $PRINTER
+        #                done
+        #                shift
+        #                shift
+        #                ;;
+        *           ) echo 'baz' ; initiate_test "$i" ;;
     esac
 done
 
