@@ -3,9 +3,12 @@
 # Author: Andrew J. Wood
 # MongolSamurai on github.com
 
-VERSION="version 1.4"
+VERSION="1.4"
 
+# This variable can be changed to any directory where you want to store your lick lists. It should end with a /
 LIST_PATH="~/bin/.lick_lists/"
+# A lick list is a simple list of lpd printer names seperated by spaces. For example:
+# fab8201bw1 fabc8802bw1 fab5517bw1 fab5517bw2 fab5517clr1
 
 #####
 #Handler functions  
@@ -16,7 +19,7 @@ initiate_test()
 
 	# Prepare the printer test page status header
 	TEST_PAGE=$(cat<<-EndOfHereDoc
-		$0 (1M) - line printer input check, $VERSION 
+		$0 (1M) - lick-$VERSION - line printer input check 
 		test page printed from `hostname` by $USER 
 		
 		printer status: 
@@ -74,6 +77,7 @@ show_help()
 {
     cat<<-EndOfHereDoc
 
+    lick-$VERSION
 	$0 [options] printer ...
 	$0 [options] @list ...
 	$0 --help
