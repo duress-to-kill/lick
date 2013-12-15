@@ -35,7 +35,7 @@ initiate_test()
 
     if [ "$LICK_PRINTER_STATE" == 0 ] && [ "$LICK_WITHOUT_TESTPAGE" != "true" ]; then
     # Next line for script testing purposes. Comment it to enable test page printing.
-		cat <<-Endoftestpage 
+		#cat <<-Endoftestpage 
 		lpr -P "$1" -p -J "Printer Test Page" <<-Endoftestpage
 		$0 (1M) - line printer input check, $VERSION
 		test page printed from `hostname` by $USER
