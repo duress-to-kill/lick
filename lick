@@ -1,6 +1,11 @@
 #!/bin/bash
 
-VERSION="version 1.2"
+# Author: Andrew J. Wood
+# MongolSamurai on github.com
+
+VERSION="version 1.4"
+
+LIST_PATH="~/bin/.lick_lists/"
 
 #####
 #Handler functions  
@@ -8,6 +13,34 @@ VERSION="version 1.2"
 
 initiate_test()
 {
+	TEST_PAGE=$(cat<<-EndOfHereDoc
+		$0 (1M) - line printer input check, $VERSION 
+		test page printed from `hostname` by $USER 
+		
+		printer status: 
+		`lpoptions -p $1 | fold -w95`
+		EndOfHereDoc
+		)
+
+	#read -r -d '' TEST_PAGE <<-EndOfForm
+	#	$0 (1M) - line printer input check, $VERSION
+	#	test page printed from `hostname` by $USER
+	#
+	#	printer status:
+	#	`lpoptions -p $1 | fold -w95`
+	#	EndOfForm
+
+	if [ "$LICK_NO_GARBAGE" != "true" ] ; then
+		TEST_PAGE=$(cat<<-EndOfHereDoc
+		$TEST_PAGE
+
+		`tr -cd [:alnum:] < /dev/urandom | fold -w95 | head -60`
+		EndOfHereDoc
+		)
+	fi
+
+	#echo -e "$TEST_PAGE"
+
     # Determine if printer is up or down and initialize a variable accordingly
     lpoptions -p "$1" | grep -q "printer-state=5" && LICK_PRINTER_STATE=1 || LICK_PRINTER_STATE=0
 
@@ -17,78 +50,134 @@ initiate_test()
     # Determine if printer supports duplex printing. Will not match on duplex tumble-only printers (if such exist)
     lpoptions -p "$1" -l | grep -q "DuplexNoTumble" && LICK_DUPLEX_SUPPORT=0 || LICK_DUPLEX_SUPPORT=1
 
-    # Report printer status
+    # Reports printer status to standard out, unless suppressed by the --silent option.
     if [ "$LICK_SILENTLY" != "true" ]; then
     {
+		# Reports if the printer state is not good.
         echo -n "$1 is "
         [ "$LICK_PRINTER_STATE" == 0 ] && echo "up." || echo "down!"
     
+		# Reports if the print queue is not accepting jobs.
         echo -n "$1 is "
         [ "$LICK_PRINT_QUEUE" == 1 ] && echo -n "NOT "
         echo "accepting jobs."
     
+		# Reports if duplex printing is enabled.
         [ "$LICK_DUPLEX_SUPPORT" == 0 ] && echo "$1 supports duplex printing."
         
+		# Declares that a test page has been printed, unless suppressed by --nopage
         [ "$LICK_PRINTER_STATE" == 0 ] && [ "$LICK_WITHOUT_TESTPAGE" != "true" ] && echo -e "\nPrinting test page."
     }
     fi
 
+	# Perform actual printing of the test page to the target device, unless redirected by --notransmit or suppressed by --nopage.
     if [ "$LICK_PRINTER_STATE" == 0 ] && [ "$LICK_WITHOUT_TESTPAGE" != "true" ]; then
+		[ "$LICK_TO_STDOUT" != "true" ] && echo -e "$TEST_PAGE" | lpr -P $1 -p -J "Printer Test Page" || echo -e "$TEST_PAGE"
+	#	[ "$LICK_TO_STDOUT" == "true" ] && echo -e "$TEST_PAGE" && return 0
+	#	lpr -P $1 -p -J "Printer Test Page" <<-EndOfHereDoc
+	#	$TEST_PAGE
+	#	EndOfHereDoc
     # Next line for script testing purposes. Comment it to enable test page printing.
-		#cat <<-Endoftestpage 
-		lpr -P "$1" -p -J "Printer Test Page" <<-Endoftestpage
-		$0 (1M) - line printer input check, $VERSION
-		test page printed from `hostname` by $USER
+	#	#cat <<-Endoftestpage 
+	#	lpr -P "$1" -p -J "Printer Test Page" <<-Endoftestpage
+	#	$0 (1M) - line printer input check, $VERSION
+	#	test page printed from `hostname` by $USER
+	
+	#	printer status:
+	#	`lpoptions -p $1 | fold -w95`
 
-		printer status:
-		`lpoptions -p $1 | fold -w95`
-
-		`[ "$LICK_NO_GARBAGE" != "true" ] && tr -cd 'A-z0-9' < /dev/urandom | fold -w95 | head -60`
-Endoftestpage
+	#	`[ "$LICK_NO_GARBAGE" != "true" ] && tr -cd 'A-z0-9' < /dev/urandom | fold -w95 | head -60`
+	#	Endoftestpage
     fi
 }
 
+# This function prints usage text, usually followed by an early exit
 show_help()
 {
-    echo $0 "--help"
-    echo $0 "[--nogarbage] [--nopage] [--silent] < printer | @list > ..."
+    cat<<-EndOfHereDoc
+
+	$0 [options] printer ...
+	$0 [options] @list ...
+	$0 --help
+	
+	printer - the name of a network printer recognized by the local lpd service
+	@list   - the name of a file containing a list of printer names (separated by spaces)
+	(lists are looked for in ~/bin/.lick_lists/)
+
+	Options:
+	(+* flags are the default options)
+	--nogarbage | -g   suppresses output of random filler characters
+	--garbage   | +g   enables output of random filler characters
+	--nopage    | -p   suppresses printing of test page
+	--page      | +p   enables printing of test page
+	--nostatus  | -s   suppresses display of status reporting to standard out - quiet mode
+	--status    | +s   enables display of status reporting to standard out
+	--notransmit| -t   causes test page text to be dumped to standard out instead of sent to the print device
+	--transmit  | +t   causes test page text to be sent to print device as normal
+	--help             display this text
+	
+	Note that arguments and options are parsed sequentially. Options passed apply only to arguments that follow them.
+
+	EndOfHereDoc
 }
 
 #####
 #Parameter checking/handling begins
 #####
 
+# the following two loops complain and error out if we were expecting an argument and did not receive one.
 PARAMS_GOOD=false
 for i; do
-    if echo $i | grep -qe '^[^-]' ; then
+    if echo $i | grep -qe '^[^-]' || [ "$i" == "--help" ] ; then
     {
         PARAMS_GOOD=true
     }
     fi
 done
-
 if [ $PARAMS_GOOD == false ] ; then
     echo "Too few arguments!"
     show_help ;
     exit 1
 fi
 
-#while [ -n "$1" ] ; do
+# main parameter processing loop begins here
 for i; do
     case "$i" in
-        --nogarbage ) export LICK_NO_GARBAGE="true" ;;
-        --nopage    ) export LICK_WITHOUT_TESTPAGE="true" ;;
-        --silent    ) export LICK_SILENTLY="true" ;;
-        --help      ) show_help ; exit 0 ;;
-        -*          ) echo "Invalid option: $i" ; show_help ; exit 1 ;;
-		@*			) FILE=`echo $i | sed s/@//`
-					  for j in `eval cat ~/bin/.lick_lists/$FILE` ; do
-						initiate_test "$j"
-						echo ""
-					  done ;;
-        *           ) echo 'baz' ; initiate_test "$i" ;;
+
+        # nogarbage flag suppresses output of random characters as page filler. Primarily for testing purposes, but can be used to save ink consumption.
+		--nogarbage	| -g	) export LICK_NO_GARBAGE="true" ;;
+		--garbage | +g		) export LICK_NO_GARBAGE="false" ;;
+
+		# nopage flag suppresses sending test page to printer.
+        --nopage | -p		) export LICK_WITHOUT_TESTPAGE="true" ;;
+		--page | +p			) export LICK_WITHOUT_TESTPAGE="false" ;; 
+		
+		# silent flag suppresses status reporting to terminal. Useful for inclusion in scripts.
+        --nostatus | -s		) export LICK_SILENTLY="true" ;;
+		--status | +s		) export LICK_SILENTLY="false" ;;
+
+		# notransmit flag causes the output of the print test page to be dumped to stdout instead of sent to the porint device. Useful mainly for development.
+		--notransmit | -t	) export LICK_TO_STDOUT="true" ;;
+		--transmit | +t		) export LICK_TO_STDOUT="false" ;;
+
+		# help flag causes lick to output usage information and exit cleanly.
+        --help				) show_help ; exit 0 ;;
+
+		# exit with failure if passed a malformed flag. Helps ensure unwanted behavior doesn't occur.
+        -*					) echo "Invalid option: $i" ; show_help ; exit 1 ;;
+
+		# this case handles requests to lick a list of printers stored in a file.
+		@*					) FILE=`echo $i | sed s/@//`
+							  for j in `eval cat $LIST_PATH$FILE`; do
+								initiate_test "$j"
+								echo ""
+							  done ;;
+		
+		# default case. Any arguments arriving here are treated as printer names and passed on thusly.
+        *					) initiate_test "$i" ;;
     esac
 done
 
-exit 1
+# final exit statement at program termination.
+exit 0
 
