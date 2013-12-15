@@ -84,7 +84,7 @@ show_help()
 	
 	printer - the name of a network printer recognized by the local lpd service
 	@list   - the name of a file containing a list of printer names (separated by spaces)
-	(lists are looked for in ~/bin/.lick_lists/)
+	(lists are looked for in $LIST_PATH)
 
 	Options:
 	(+* flags are the default options)
