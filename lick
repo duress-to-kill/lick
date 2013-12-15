@@ -51,7 +51,7 @@ Endoftestpage
 show_help()
 {
     echo $0 "--help"
-    echo $0 "[--nogarbage] [--nopage] [--silent] printer [...]"
+    echo $0 "[--nogarbage] [--nopage] [--silent] < printer | @list > ..."
 }
 
 #####
