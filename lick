@@ -1,10 +1,6 @@
 #!/bin/bash
 
-#### Version 1.0 12/14/2013
-
-#####
-#Predefined printer lists
-#####
+VERSION="version 1.2"
 
 #####
 #Handler functions  
@@ -12,7 +8,6 @@
 
 initiate_test()
 {
-    echo test 1
     # Determine if printer is up or down and initialize a variable accordingly
     lpoptions -p "$1" | grep -q "printer-state=5" && LICK_PRINTER_STATE=1 || LICK_PRINTER_STATE=0
 
@@ -42,7 +37,7 @@ initiate_test()
     # Next line for script testing purposes. Comment it to enable test page printing.
 		cat <<-Endoftestpage 
 		lpr -P "$1" -p -J "Printer Test Page" <<-Endoftestpage
-		$0 (1M) - line printer input check
+		$0 (1M) - line printer input check, $VERSION
 		test page printed from `hostname` by $USER
 
 		printer status:
@@ -86,13 +81,11 @@ for i; do
         --silent    ) export LICK_SILENTLY="true" ;;
         --help      ) show_help ; exit 0 ;;
         -*          ) echo "Invalid option: $i" ; show_help ; exit 1 ;;
-        #"!"           ) 
-        #                select PRINTER in `cat ~/bin/.lick_lists/$2`; do
-        #                    initiate_test $PRINTER
-        #                done
-        #                shift
-        #                shift
-        #                ;;
+		@*			) FILE=`echo $i | sed s/@//`
+					  for j in `eval cat ~/bin/.lick_lists/$FILE` ; do
+						initiate_test "$j"
+						echo ""
+					  done ;;
         *           ) echo 'baz' ; initiate_test "$i" ;;
     esac
 done
