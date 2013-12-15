@@ -13,6 +13,8 @@ LIST_PATH="~/bin/.lick_lists/"
 
 initiate_test()
 {
+
+	# Prepare the printer test page status header
 	TEST_PAGE=$(cat<<-EndOfHereDoc
 		$0 (1M) - line printer input check, $VERSION 
 		test page printed from `hostname` by $USER 
@@ -21,15 +23,8 @@ initiate_test()
 		`lpoptions -p $1 | fold -w95`
 		EndOfHereDoc
 		)
-
-	#read -r -d '' TEST_PAGE <<-EndOfForm
-	#	$0 (1M) - line printer input check, $VERSION
-	#	test page printed from `hostname` by $USER
-	#
-	#	printer status:
-	#	`lpoptions -p $1 | fold -w95`
-	#	EndOfForm
-
+	
+	# Unless suppressed, append filler text
 	if [ "$LICK_NO_GARBAGE" != "true" ] ; then
 		TEST_PAGE=$(cat<<-EndOfHereDoc
 		$TEST_PAGE
@@ -38,8 +33,6 @@ initiate_test()
 		EndOfHereDoc
 		)
 	fi
-
-	#echo -e "$TEST_PAGE"
 
     # Determine if printer is up or down and initialize a variable accordingly
     lpoptions -p "$1" | grep -q "printer-state=5" && LICK_PRINTER_STATE=1 || LICK_PRINTER_STATE=0
@@ -73,21 +66,6 @@ initiate_test()
 	# Perform actual printing of the test page to the target device, unless redirected by --notransmit or suppressed by --nopage.
     if [ "$LICK_PRINTER_STATE" == 0 ] && [ "$LICK_WITHOUT_TESTPAGE" != "true" ]; then
 		[ "$LICK_TO_STDOUT" != "true" ] && echo -e "$TEST_PAGE" | lpr -P $1 -p -J "Printer Test Page" || echo -e "$TEST_PAGE"
-	#	[ "$LICK_TO_STDOUT" == "true" ] && echo -e "$TEST_PAGE" && return 0
-	#	lpr -P $1 -p -J "Printer Test Page" <<-EndOfHereDoc
-	#	$TEST_PAGE
-	#	EndOfHereDoc
-    # Next line for script testing purposes. Comment it to enable test page printing.
-	#	#cat <<-Endoftestpage 
-	#	lpr -P "$1" -p -J "Printer Test Page" <<-Endoftestpage
-	#	$0 (1M) - line printer input check, $VERSION
-	#	test page printed from `hostname` by $USER
-	
-	#	printer status:
-	#	`lpoptions -p $1 | fold -w95`
-
-	#	`[ "$LICK_NO_GARBAGE" != "true" ] && tr -cd 'A-z0-9' < /dev/urandom | fold -w95 | head -60`
-	#	Endoftestpage
     fi
 }
 
