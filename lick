@@ -76,18 +76,15 @@ initiate_test()
 show_help()
 {
     cat<<-EndOfHereDoc
-
-    lick-$VERSION
-	$0 [options] printer ...
-	$0 [options] @list ...
+	lick-$VERSION
+	$0 [options] <printer | @list> [ [options] <printer | @list> ... ]
 	$0 --help
 	
 	printer - the name of a network printer recognized by the local lpd service
 	@list   - the name of a file containing a list of printer names (separated by spaces)
 	(lists are looked for in ~/bin/.lick_lists/)
 
-	Options:
-	(+* flags are the default options)
+	Options: (+* flags are the default options)
 	--nogarbage | -g   suppresses output of random filler characters
 	--garbage   | +g   enables output of random filler characters
 	--nopage    | -p   suppresses printing of test page
@@ -95,11 +92,13 @@ show_help()
 	--nostatus  | -s   suppresses display of status reporting to standard out - quiet mode
 	--status    | +s   enables display of status reporting to standard out
 	--notransmit| -t   causes test page text to be dumped to standard out instead of sent to the print device
+	                    (this is most often used with -g for debugging)
 	--transmit  | +t   causes test page text to be sent to print device as normal
 	--help             display this text
 	
 	Note that arguments and options are parsed sequentially. Options passed apply only to arguments that follow them.
-
+	For example: "lick fabc8802bw1 fab8201bw1 -p fab8803clr1" will report print queue status of all printers, but
+	   only send a test page to the first two.
 	EndOfHereDoc
 }
 
