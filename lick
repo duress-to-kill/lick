@@ -38,10 +38,10 @@ initiate_test()
 	fi
 
     # Determine if printer is up or down and initialize a variable accordingly
-    lpoptions -p "$1" | grep -q "printer-state=5" && LICK_PRINTER_STATE=1 || LICK_PRINTER_STATE=0
+    lpoptions -p "$1" | grep -q "printer-state=3" && LICK_PRINTER_STATE=0 || LICK_PRINTER_STATE=1
 
     # Detemine if printer is accepting jobs
-    lpoptions -p "$1" | grep -q "printer-is-accepting-jobs=true" && LICK_PRINT_QUEUE=0 || LICK_PRINT_QUEUE=1
+    lpoptions -p "$1" | grep -q 'printer-is-accepting-jobs=1' && LICK_PRINT_QUEUE=0 || LICK_PRINT_QUEUE=1
 
     # Determine if printer supports duplex printing. Will not match on duplex tumble-only printers (if such exist)
     lpoptions -p "$1" -l | grep -q "DuplexNoTumble" && LICK_DUPLEX_SUPPORT=0 || LICK_DUPLEX_SUPPORT=1
