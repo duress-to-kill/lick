@@ -97,8 +97,8 @@ show_help()
 	--help             display this text
 	
 	Note that arguments and options are parsed sequentially. Options passed apply only to arguments that follow them.
-	For example: "lick fabc8802bw1 fab8201bw1 -p fab8803clr1" will report print queue status of all printers, but
-	   only send a test page to the first two.
+	For example: "lick -p fabc8802bw1 fab8201bw1 +p @fab" will report print queue status of all printers, but will
+        only send a test page to the printers that appear in the lick file ~/.lick_lists/fab.
 	EndOfHereDoc
 }
 
